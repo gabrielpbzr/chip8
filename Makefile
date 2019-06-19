@@ -1,7 +1,7 @@
 CC= g++
 SOURCES=*.cpp
 TARGET= bin/chip8
-LINKER_FLAGS= -lSDL2
+LINKER_FLAGS= -lSDL2 -lc
 COMPILER_FLAGS= -Wall -o $(TARGET)
 
 all: clean build

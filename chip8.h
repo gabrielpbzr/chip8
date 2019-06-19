@@ -18,6 +18,12 @@ class Chip8
         unsigned short stack[STACK_SIZE];
         unsigned short sp;
     
+    protected:
+        unsigned short fetchInstruction();
+        void jumpToAddress(unsigned short address);
+        void callSubroutineAt(unsigned short address);
+        void returnFromSubRoutine(void);
+    
     public:
         void init();
         void load(const char* file);
