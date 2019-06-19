@@ -50,7 +50,7 @@ void Chip8::execute()
             this->jumpToAddress(opcode & 0x0FFF);
             break;
         case 0x2:
-            // NOP
+            this->callSubroutineAt(opcode & 0xFFF);
             break;
         case 0x3:
             // NOP
@@ -127,7 +127,14 @@ void Chip8::jumpToAddress(unsigned short address)
 }
 
 void Chip8::returnFromSubRoutine() {
-    printf("RETURN FROM ROUTINE\n");
     this->pc = this->stack[this->sp];
     this->sp--;
+    printf("RETURN FROM ROUTINE TO 0x%04x\n", this->pc);
+}
+
+void Chip8::callSubroutineAt(unsigned short address) {
+    this->stack[this->sp] = this->pc;
+    this->sp++;
+    this->pc = address;
+    printf("CALLING ROUTINE AT 0x%04x\n", this->pc);
 }
