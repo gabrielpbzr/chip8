@@ -21,11 +21,13 @@ class Chip8
     protected:
         unsigned short fetchInstruction();
         void jumpToAddress(unsigned short address);
+        void jumpToAddressPlusV0(unsigned short address);
         void callSubroutineAt(unsigned short address);
         void returnFromSubRoutine(void);
         void skipNextInstructionIfRegisterValueEquals(unsigned char registerIndex, unsigned char value);
         void skipNextInstructionIfRegisterValueNotEquals(unsigned char registerIndex, unsigned char value);
         void skipNextInstructionIfEquals(unsigned char registerIndex, unsigned char otherRegisterIndex);
+        void skipNextInstructionIfNotEquals(unsigned char registerIndex, unsigned char otherRegisterIndex);
         void setRegisterValue(unsigned char registerIndex, unsigned char value);
         void addToRegisterValue(unsigned char registerIndex, unsigned char value);
     

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 
 void Chip8::init()
 {
@@ -120,30 +121,48 @@ void Chip8::execute()
                     this->V[x] = this->V[x] ^ this->V[y];
                     break;
                 case 0x04:
+                    this->V[x] += this->V[y];
                     break;
                 case 0x05:
+                    this->V[x] -= this->V[y];
                     break;
                 case 0x06:
+                    this->V[0x0F] = (this->V[x] & 0x01);
+                    this->V[x] >>= 1;
                     break;
                 case 0x07:
+                    this->V[x] = this->V[y] - this->V[x];
                     break;
                 case 0x0E:
+                    this->V[0x0F] = (this->V[x] & 0x80);
+                    this->V[x] <<= 1;
                     break;
             }
             break;
         }
         case 0x9:
-            // NOP
+        {
+            unsigned char rx = ((opcode & 0x0F00) >> 8);
+            unsigned char ry = ((opcode & 0x00F0) >> 4);
+            this->skipNextInstructionIfNotEquals(rx, ry);
             break;
+        }
         case 0xA:
             this->I = (char)(opcode & 0x0FFF);
             break;
         case 0xB:
-            // NOP
+        {
+            unsigned short address = (unsigned short)(opcode & 0x0FFF);
+            this->jumpToAddressPlusV0(address);
             break;
+        }
         case 0xC:
-            // NOP
+        {
+            unsigned char x = (opcode & 0x0F00);
+            unsigned char value = (opcode & 0x00FF);
+            this->V[x] = randomByte() && value;
             break;
+        }
         case 0xD:
             // NOP
             break;
@@ -191,6 +210,13 @@ void Chip8::jumpToAddress(unsigned short address)
     this->pc = address;
 }
 
+void Chip8::jumpToAddressPlusV0(unsigned short address)
+{
+    unsigned short newAddress = address + this->V[0];
+    printf("GOTO ADDRESS 0x%x\n PLUS V0 CONTENT => 0x03%x", address, newAddress);
+    this->pc = newAddress;
+}
+
 void Chip8::returnFromSubRoutine()
 {
     this->pc = this->stack[this->sp];
@@ -228,8 +254,18 @@ void Chip8::skipNextInstructionIfRegisterValueNotEquals(unsigned char registerIn
 
 void Chip8::skipNextInstructionIfEquals(unsigned char registerIndex, unsigned char otherRegisterIndex)
 {
-    printf("SKIP INSTRUCTION IF V[%d] != V[%d]: %d == %d\n", registerIndex, otherRegisterIndex, this->V[registerIndex], this->V[otherRegisterIndex]);
+    printf("SKIP INSTRUCTION IF V[%d] == V[%d]: %d == %d\n", registerIndex, otherRegisterIndex, this->V[registerIndex], this->V[otherRegisterIndex]);
     if (this->V[registerIndex] == this->V[otherRegisterIndex])
+    {
+        printf("\tSKIPPED\n");
+        this->pc += 2;
+    }
+}
+
+void Chip8::skipNextInstructionIfNotEquals(unsigned char registerIndex, unsigned char otherRegisterIndex)
+{
+    printf("SKIP INSTRUCTION IF V[%d] != V[%d]: %d == %d\n", registerIndex, otherRegisterIndex, this->V[registerIndex], this->V[otherRegisterIndex]);
+    if (this->V[registerIndex] != this->V[otherRegisterIndex])
     {
         printf("\tSKIPPED\n");
         this->pc += 2;
@@ -246,4 +282,9 @@ void Chip8::addToRegisterValue(unsigned char registerIndex, unsigned char value)
 {
     this->V[registerIndex] += value;
     printf("ADD VALUE TO V[%d] = 0x%02x\n", registerIndex, value);
+}
+
+unsigned char randomByte() {
+    float rand = ((float) random()) / RAND_MAX;
+    return (unsigned char) (rand * 0xFF);
 }
