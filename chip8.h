@@ -33,7 +33,7 @@ class Chip8
     
     public:
         void init();
-        void load(const char* file);
+        int load(const char* file);
         int execute();
         void dump();
 };

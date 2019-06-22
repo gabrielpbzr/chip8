@@ -13,10 +13,15 @@ void Chip8::init()
     memset(this->V, 0, 16);
 }
 
-void Chip8::load(const char *file)
+int Chip8::load(const char *file)
 {
     std::ifstream in;
     in.open(file, std::ios::binary);
+    
+    if (!in.is_open()) {
+        return 1;
+    }
+    
     int offset = 0;
     while (!in.eof())
     {
@@ -26,6 +31,7 @@ void Chip8::load(const char *file)
         offset++;
     }
     in.close();
+    return 0;
 }
 
 int Chip8::execute()
