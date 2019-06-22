@@ -28,13 +28,13 @@ void Chip8::load(const char *file)
     in.close();
 }
 
-void Chip8::execute()
+int Chip8::execute()
 {
     //fetch
     unsigned short opcode = this->fetchInstruction();
     if (opcode == 0x0000)
     {
-        return;
+        return 0;
     }
     printf("OPCODE => %04x\n", opcode);
     // decode
@@ -121,9 +121,11 @@ void Chip8::execute()
                     this->V[x] = this->V[x] ^ this->V[y];
                     break;
                 case 0x04:
+                    this->V[0xF] = ((this->V[x] + this->V[y]) > 0xFF) ? 1 : 0;
                     this->V[x] += this->V[y];
                     break;
                 case 0x05:
+                    this->V[0xF] = (this->V[y] > this->V[x]) ? 0 : 1;
                     this->V[x] -= this->V[y];
                     break;
                 case 0x06:
@@ -174,8 +176,11 @@ void Chip8::execute()
             break;
         default:
             // RAISE AN ERROR: OPCODE NOT SUPPORTED
+            printf("\aOPCODE NOT SUPPORTED!\n");
+            return 1;
             break;
     }
+    return 0;
 }
 
 unsigned short Chip8::fetchInstruction()
@@ -286,5 +291,7 @@ void Chip8::addToRegisterValue(unsigned char registerIndex, unsigned char value)
 
 unsigned char Chip8::randomByte() {
     float rand = ((float) random()) / RAND_MAX;
-    return (unsigned char) (rand * 0xFF);
+    unsigned char randomByte = (unsigned char) (rand * 0xFF);
+    printf("Random byte is: 0x%02x", randomByte);
+    return randomByte;
 }

@@ -34,7 +34,7 @@ class Chip8
     public:
         void init();
         void load(const char* file);
-        void execute();
+        int execute();
         void dump();
 };
 #endif
