@@ -18,8 +18,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    for(;;) {
-        ch8.execute();
+    while (ch8.execute() == 0) {
         usleep(160000);
     }
 
