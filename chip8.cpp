@@ -284,7 +284,7 @@ void Chip8::addToRegisterValue(unsigned char registerIndex, unsigned char value)
     printf("ADD VALUE TO V[%d] = 0x%02x\n", registerIndex, value);
 }
 
-unsigned char randomByte() {
+unsigned char Chip8::randomByte() {
     float rand = ((float) random()) / RAND_MAX;
     return (unsigned char) (rand * 0xFF);
 }

@@ -17,8 +17,8 @@ class Chip8
         unsigned short pc;
         unsigned short stack[STACK_SIZE];
         unsigned short sp;
-    
-    protected:
+        
+        unsigned char randomByte();
         unsigned short fetchInstruction();
         void jumpToAddress(unsigned short address);
         void jumpToAddressPlusV0(unsigned short address);
