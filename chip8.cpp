@@ -19,7 +19,7 @@ int Chip8::load(const char *file)
     in.open(file, std::ios::binary);
     
     if (!in.is_open()) {
-        return 1;
+        return 0;
     }
     
     int offset = 0;
@@ -31,7 +31,7 @@ int Chip8::load(const char *file)
         offset++;
     }
     in.close();
-    return 0;
+    return 1;
 }
 
 int Chip8::execute()
@@ -42,7 +42,7 @@ int Chip8::execute()
     {
         return 0;
     }
-    printf("OPCODE => %04x\n", opcode);
+    printf("OPCODE => %hx\n", opcode);
     // decode
     unsigned char family = (unsigned char)((opcode & 0xF000) >> 12);
     // execute
@@ -230,15 +230,13 @@ void Chip8::jumpToAddressPlusV0(unsigned short address)
 
 void Chip8::returnFromSubRoutine()
 {
-    this->pc = this->stack[this->sp];
-    this->sp--;
+    this->pc = this->stack[--this->sp];
     printf("RETURN FROM ROUTINE TO 0x%04x\n", this->pc);
 }
 
 void Chip8::callSubroutineAt(unsigned short address)
 {
-    this->stack[this->sp] = this->pc;
-    this->sp++;
+    this->stack[this->sp++] = this->pc;
     this->pc = address;
     printf("CALLING ROUTINE AT 0x%04x\n", this->pc);
 }

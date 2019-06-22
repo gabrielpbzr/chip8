@@ -13,7 +13,7 @@ int main(int argc, char** argv)
     char* rom = argv[1];
     std::cout << "Selected rom: " << argv[1] << std::endl;
 
-    if (ch8.load(rom)) {
+    if (!ch8.load(rom)) {
         std::cout << "ROM file not found" << std::endl;
         return 1;
     }
