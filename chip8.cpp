@@ -11,6 +11,8 @@ void Chip8::init()
     this->sp = 0x0;
     this->pc = 0x200;
     memset(this->V, 0, 16);
+    memset(this->screen, 0, SCREEN_SIZE);
+    this->draw = false;
 }
 
 int Chip8::load(const char *file)
@@ -156,7 +158,8 @@ int Chip8::execute()
             break;
         }
         case 0xA:
-            this->I = (char)(opcode & 0x0FFF);
+            this->I = (opcode & 0x0FFF);
+            printf("Address stored at I => 0x%x\n", this->I);
             break;
         case 0xB:
         {
@@ -172,8 +175,40 @@ int Chip8::execute()
             break;
         }
         case 0xD:
-            // NOP
+        {
+            // Draw a sprite at (VX, VY) with size (8, N) at I
+            unsigned char x = this->V[(opcode & 0x0F00) >> 8];
+            unsigned char y = this->V[(opcode & 0x00F0) >> 4];
+            unsigned char height = (opcode & 0x000F);
+            this->V[0xF] = 0;
+
+            for (unsigned char yLine = 0; yLine < height; yLine++) {
+                // Load from memory at I the pixel value
+                int pixel = this->memory[this->I + yLine];
+                for (unsigned char xLine = 0; xLine < SPRITE_WIDTH; xLine++) {
+                    // Look at each bit of pixel data
+                    unsigned char pixelSet = (pixel & (0x80 >> xLine));
+                    // If current pixel is set...
+                    if (pixelSet != 0) {
+                        // Calculate the pixel index at screen memory
+                        unsigned short pixelIndex = (x + xLine) + ((y + yLine) * SCREEN_HEIGHT);
+
+                        /* 
+                         * If the pixel at the position is already defined, set the V[0xF] to one
+                         * indicating that we have a collision
+                         */
+                        if (this->screen[pixelIndex] == 1) {
+                            this->V[0xF] = 1;
+                        }
+                        // Flip pixel value using XOR 
+                        this->screen[pixelIndex] ^= 1;
+                    }
+                }
+            }
+            
+            this->draw = true;
             break;
+        }
         case 0xE:
             // NOP
             break;

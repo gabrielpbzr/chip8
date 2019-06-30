@@ -4,8 +4,11 @@
 #define MEMORY_SIZE 0x1000
 #define MEMORY_START_ADDRESS 0x200
 #define REGISTER_COUNT 0x10
-#define SCREEN_SIZE 64 * 32
+#define SCREEN_WIDTH 64
+#define SCREEN_HEIGHT 32
+#define SCREEN_SIZE SCREEN_WIDTH * SCREEN_HEIGHT
 #define STACK_SIZE 16
+#define SPRITE_WIDTH 8
 
 class Chip8
 {
@@ -17,6 +20,7 @@ class Chip8
         unsigned short pc;
         unsigned short stack[STACK_SIZE];
         unsigned short sp;
+        bool draw;
         
         unsigned char randomByte();
         unsigned short fetchInstruction();
