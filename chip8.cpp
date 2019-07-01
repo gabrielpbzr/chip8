@@ -38,6 +38,8 @@ int Chip8::load(const char *file)
 
 int Chip8::execute()
 {
+    // Clear drawing flag
+    this->draw = false;
     //fetch
     unsigned short opcode = this->fetchInstruction();
     if (opcode == 0x0000)
@@ -54,7 +56,9 @@ int Chip8::execute()
             switch (opcode & 0x00FF)
             {
             case 0xE0:
-                printf("CLEAR DISPLAY\n");
+                //Clear screen
+                memset(this->screen, 0, SCREEN_SIZE);
+                this->draw = true;
                 break;
             case 0xEE:
                 returnFromSubRoutine();
