@@ -5,6 +5,11 @@
 #include <cstring>
 #include <cstdlib>
 
+Chip8::Chip8(Display* display)
+{
+    this->display = display;
+}
+
 void Chip8::init()
 {
     this->I = 0x0;
@@ -225,6 +230,11 @@ int Chip8::execute()
             return 1;
             break;
     }
+    
+    if (this->draw) {
+        this->display->render(this->screen);
+    }
+    
     return 0;
 }
 
@@ -332,9 +342,15 @@ void Chip8::addToRegisterValue(unsigned char registerIndex, unsigned char value)
     printf("ADD VALUE TO V[%d] = 0x%02x\n", registerIndex, value);
 }
 
-unsigned char Chip8::randomByte() {
+unsigned char Chip8::randomByte()
+{
     float rand = ((float) random()) / RAND_MAX;
     unsigned char randomByte = (unsigned char) (rand * 0xFF);
     printf("Random byte is: 0x%02x", randomByte);
     return randomByte;
+}
+
+Chip8::~Chip8()
+{
+    this->display = NULL;
 }

@@ -10,6 +10,8 @@
 #define STACK_SIZE 16
 #define SPRITE_WIDTH 8
 
+#include "display.h"
+
 class Chip8
 {
     private:
@@ -21,6 +23,7 @@ class Chip8
         unsigned short stack[STACK_SIZE];
         unsigned short sp;
         bool draw;
+        Display* display;
         
         unsigned char randomByte();
         unsigned short fetchInstruction();
@@ -36,9 +39,11 @@ class Chip8
         void addToRegisterValue(unsigned char registerIndex, unsigned char value);
     
     public:
+        Chip8(Display* display);
         void init();
         int load(const char* file);
         int execute();
         void dump();
+        ~Chip8();
 };
 #endif
