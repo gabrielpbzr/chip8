@@ -6,7 +6,7 @@ int main(int argc, char** argv)
 {
     Display *display; //TODO Implementar aqui um objeto para renderização dos gráficos
     
-    Chip8 ch8(display);
+    Chip8 ch8;
     ch8.init();
     if (argv[1] == NULL) {
         std::cout << "ROM file not found" << std::endl;
