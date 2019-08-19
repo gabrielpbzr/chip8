@@ -345,9 +345,9 @@ unsigned char Chip8::randomByte()
     return randomByte;
 }
 
-const char* Chip8::screen(void)
+unsigned char* Chip8::getScreen(void) const
 {
-    return this->screen;
+    return (unsigned char*) this->screen;
 }
 
 bool Chip8::needsDrawing()
@@ -357,4 +357,5 @@ bool Chip8::needsDrawing()
 
 Chip8::~Chip8()
 {
+    free(this->screen);
 }

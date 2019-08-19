@@ -1,13 +1,14 @@
 #include <iostream>
-#include <unistd.h>
-#include "chip8.h"
-#include "display.h"
+
+#include "application.h"
 int main(int argc, char** argv)
 {
     Display *display; //TODO Implementar aqui um objeto para renderização dos gráficos
     
     Chip8 ch8;
-    ch8.init();
+    
+    Application app(display, &ch8);
+
     if (argv[1] == NULL) {
         std::cout << "ROM file not found" << std::endl;
         return 1;
@@ -15,15 +16,12 @@ int main(int argc, char** argv)
     char* rom = argv[1];
     std::cout << "Selected rom: " << argv[1] << std::endl;
 
-    if (!ch8.load(rom)) {
+    if (!app.loadRom(rom)) {
         std::cout << "ROM file not found" << std::endl;
         return 1;
     }
 
-    while (ch8.execute() == 0) {
-        usleep(160000);
-    }
+    app.run();
 
-    //ch8.dump();
     return 0;
 }

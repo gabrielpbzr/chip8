@@ -43,7 +43,7 @@ class Chip8
         int load(const char* file);
         int execute();
         void dump();
-        const char* screen(void);
+        unsigned char* getScreen(void) const;
         bool needsDrawing();
         ~Chip8();
 };
