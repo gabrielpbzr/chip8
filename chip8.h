@@ -23,7 +23,6 @@ class Chip8
         unsigned short stack[STACK_SIZE];
         unsigned short sp;
         bool draw;
-        Display* display;
         
         unsigned char randomByte();
         unsigned short fetchInstruction();
@@ -39,11 +38,13 @@ class Chip8
         void addToRegisterValue(unsigned char registerIndex, unsigned char value);
     
     public:
-        Chip8(Display* display);
+        Chip8();
         void init();
         int load(const char* file);
         int execute();
         void dump();
+        const char* screen(void);
+        bool needsDrawing();
         ~Chip8();
 };
 #endif

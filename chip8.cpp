@@ -5,9 +5,8 @@
 #include <cstring>
 #include <cstdlib>
 
-Chip8::Chip8(Display* display)
+Chip8::Chip8()
 {
-    this->display = display;
 }
 
 void Chip8::init()
@@ -231,10 +230,6 @@ int Chip8::execute()
             break;
     }
     
-    if (this->draw) {
-        this->display->render(this->screen);
-    }
-    
     return 0;
 }
 
@@ -350,7 +345,16 @@ unsigned char Chip8::randomByte()
     return randomByte;
 }
 
+const char* Chip8::screen(void)
+{
+    return this->screen;
+}
+
+bool Chip8::needsDrawing()
+{
+    return this->draw;
+}
+
 Chip8::~Chip8()
 {
-    this->display = NULL;
 }
