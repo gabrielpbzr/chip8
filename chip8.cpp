@@ -5,6 +5,25 @@
 #include <cstring>
 #include <cstdlib>
 
+const unsigned char chip8_fontset[80] = {
+        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+        0x20, 0x60, 0x20, 0x20, 0x70, // 1
+        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
+
 Chip8::Chip8()
 {
 }
@@ -13,9 +32,10 @@ void Chip8::init()
 {
     this->I = 0x0;
     this->sp = 0x0;
-    this->pc = 0x200;
+    this->pc = MEMORY_START_ADDRESS;
     memset(this->V, 0, 16);
     memset(this->screen, 0, SCREEN_SIZE);
+    loadFontset();
     this->draw = false;
 }
 
@@ -23,11 +43,12 @@ int Chip8::load(const char *file)
 {
     std::ifstream in;
     in.open(file, std::ios::binary);
-    
-    if (!in.is_open()) {
+
+    if (!in.is_open())
+    {
         return 0;
     }
-    
+
     int offset = 0;
     while (!in.eof())
     {
@@ -56,180 +77,184 @@ int Chip8::execute()
     // execute
     switch (family)
     {
-        case 0x0:
-            switch (opcode & 0x00FF)
+    case 0x0:
+        switch (opcode & 0x00FF)
+        {
+        case 0xE0:
+            //Clear screen
+            memset(this->screen, 0, SCREEN_SIZE);
+            this->draw = true;
+            break;
+        case 0xEE:
+            returnFromSubRoutine();
+            break;
+        }
+        break;
+    case 0x1:
+    {
+        unsigned short address = opcode & 0x0FFF;
+        this->jumpToAddress(address);
+        break;
+    }
+    case 0x2:
+    {
+        unsigned short address = opcode & 0x0FFF;
+        this->callSubroutineAt(address);
+        break;
+    }
+    case 0x3:
+    {
+        unsigned short rx = ((opcode & 0x0F00) >> 8);
+        unsigned char value = (opcode & 0x00FF);
+        this->skipNextInstructionIfRegisterValueEquals(rx, value);
+        break;
+    }
+    case 0x4:
+    {
+        unsigned short rx = ((opcode & 0x0F00) >> 8);
+        unsigned char value = (opcode & 0x00FF);
+        this->skipNextInstructionIfRegisterValueNotEquals(rx, value);
+        break;
+    }
+    case 0x5:
+    {
+        unsigned char rx = ((opcode & 0x0F00) >> 8);
+        unsigned char ry = ((opcode & 0x00F0) >> 4);
+        this->skipNextInstructionIfEquals(rx, ry);
+        break;
+    }
+    case 0x6:
+    {
+        unsigned char rx = ((opcode & 0x0F00) >> 8);
+        unsigned char value = (opcode & 0x00FF);
+        this->setRegisterValue(rx, value);
+        break;
+    }
+    case 0x7:
+    {
+        unsigned char rx = ((opcode & 0x0F00) >> 8);
+        unsigned char value = (opcode & 0x00FF);
+        this->addToRegisterValue(rx, value);
+        break;
+    }
+
+    case 0x8:
+    {
+        unsigned char op = (opcode & 0x000F);
+        unsigned char x = (opcode & 0x0F00) >> 8;
+        unsigned char y = (opcode & 0x00F0) >> 4;
+        switch (op)
+        {
+        case 0x00:
+            this->V[x] = this->V[y];
+            break;
+        case 0x01:
+            this->V[x] = this->V[x] | this->V[y];
+            break;
+        case 0x02:
+            this->V[x] = this->V[x] & this->V[y];
+            break;
+        case 0x03:
+            this->V[x] = this->V[x] ^ this->V[y];
+            break;
+        case 0x04:
+            this->V[0xF] = ((this->V[x] + this->V[y]) > 0xFF) ? 1 : 0;
+            this->V[x] += this->V[y];
+            break;
+        case 0x05:
+            this->V[0xF] = (this->V[y] > this->V[x]) ? 0 : 1;
+            this->V[x] -= this->V[y];
+            break;
+        case 0x06:
+            this->V[0x0F] = (this->V[x] & 0x01);
+            this->V[x] >>= 1;
+            break;
+        case 0x07:
+            this->V[x] = this->V[y] - this->V[x];
+            break;
+        case 0x0E:
+            this->V[0x0F] = (this->V[x] & 0x80);
+            this->V[x] <<= 1;
+            break;
+        }
+        break;
+    }
+    case 0x9:
+    {
+        unsigned char rx = ((opcode & 0x0F00) >> 8);
+        unsigned char ry = ((opcode & 0x00F0) >> 4);
+        this->skipNextInstructionIfNotEquals(rx, ry);
+        break;
+    }
+    case 0xA:
+        this->I = (opcode & 0x0FFF);
+        printf("Address stored at I => 0x%x\n", this->I);
+        break;
+    case 0xB:
+    {
+        unsigned short address = (unsigned short)(opcode & 0x0FFF);
+        this->jumpToAddressPlusV0(address);
+        break;
+    }
+    case 0xC:
+    {
+        unsigned char x = (opcode & 0x0F00);
+        unsigned char value = (opcode & 0x00FF);
+        this->V[x] = randomByte() && value;
+        break;
+    }
+    case 0xD:
+    {
+        // Draw a sprite at (VX, VY) with size (8, N) at I
+        unsigned short x = this->V[(opcode & 0x0F00) >> 8];
+        unsigned short y = this->V[(opcode & 0x00F0) >> 4];
+        unsigned char height = (opcode & 0x000F);
+        this->V[0xF] = 0;
+
+        for (unsigned short yLine = 0; yLine < height; yLine++)
+        {
+            // Load from memory at I the pixel value
+            int pixel = this->memory[I + yLine];
+            for (unsigned char xLine = 0; xLine < SPRITE_WIDTH; xLine++)
             {
-            case 0xE0:
-                //Clear screen
-                memset(this->screen, 0, SCREEN_SIZE);
-                this->draw = true;
-                break;
-            case 0xEE:
-                returnFromSubRoutine();
-                break;
-            }
-            break;
-        case 0x1:
-        {
-            unsigned short address = opcode & 0x0FFF;
-            this->jumpToAddress(address);
-            break;
-        }
-        case 0x2:
-        {
-            unsigned short address = opcode & 0x0FFF;
-            this->callSubroutineAt(address);
-            break;
-        }
-        case 0x3:
-        {
-            unsigned short rx = ((opcode & 0x0F00) >> 8);
-            unsigned char value = (opcode & 0x00FF);
-            this->skipNextInstructionIfRegisterValueEquals(rx, value);
-            break;
-        }
-        case 0x4:
-        {
-            unsigned short rx = ((opcode & 0x0F00) >> 8);
-            unsigned char value = (opcode & 0x00FF);
-            this->skipNextInstructionIfRegisterValueNotEquals(rx, value);
-            break;
-        }
-        case 0x5:
-        {
-            unsigned char rx = ((opcode & 0x0F00) >> 8);
-            unsigned char ry = ((opcode & 0x00F0) >> 4);
-            this->skipNextInstructionIfEquals(rx, ry);
-            break;
-        }
-        case 0x6:
-        {
-            unsigned char rx = ((opcode & 0x0F00) >> 8);
-            unsigned char value = (opcode & 0x00FF);
-            this->setRegisterValue(rx, value);
-            break;
-        }
-        case 0x7:
-        {
-            unsigned char rx = ((opcode & 0x0F00) >> 8);
-            unsigned char value = (opcode & 0x00FF);
-            this->addToRegisterValue(rx, value);
-            break;
-        }
+                // Look at each bit of pixel data
+                unsigned short pixelSet = (pixel & (0x80 >> xLine));
+                // If current pixel is set...
+                if (pixelSet != 0)
+                {
+                    // Calculate the pixel index at screen memory
+                    unsigned short pixelIndex = (x + xLine) + ((y + yLine) * SCREEN_WIDTH);
 
-        case 0x8:
-        {
-            unsigned char op = (opcode & 0x000F);
-            unsigned char x = (opcode & 0x0F00) >> 8;
-            unsigned char y = (opcode & 0x00F0) >> 4;
-            switch (op)
-            {
-                case 0x00:
-                    this->V[x] = this->V[y];
-                    break;
-                case 0x01:
-                    this->V[x] = this->V[x] | this->V[y];
-                    break;
-                case 0x02:
-                    this->V[x] = this->V[x] & this->V[y];
-                    break;
-                case 0x03:
-                    this->V[x] = this->V[x] ^ this->V[y];
-                    break;
-                case 0x04:
-                    this->V[0xF] = ((this->V[x] + this->V[y]) > 0xFF) ? 1 : 0;
-                    this->V[x] += this->V[y];
-                    break;
-                case 0x05:
-                    this->V[0xF] = (this->V[y] > this->V[x]) ? 0 : 1;
-                    this->V[x] -= this->V[y];
-                    break;
-                case 0x06:
-                    this->V[0x0F] = (this->V[x] & 0x01);
-                    this->V[x] >>= 1;
-                    break;
-                case 0x07:
-                    this->V[x] = this->V[y] - this->V[x];
-                    break;
-                case 0x0E:
-                    this->V[0x0F] = (this->V[x] & 0x80);
-                    this->V[x] <<= 1;
-                    break;
-            }
-            break;
-        }
-        case 0x9:
-        {
-            unsigned char rx = ((opcode & 0x0F00) >> 8);
-            unsigned char ry = ((opcode & 0x00F0) >> 4);
-            this->skipNextInstructionIfNotEquals(rx, ry);
-            break;
-        }
-        case 0xA:
-            this->I = (opcode & 0x0FFF);
-            printf("Address stored at I => 0x%x\n", this->I);
-            break;
-        case 0xB:
-        {
-            unsigned short address = (unsigned short)(opcode & 0x0FFF);
-            this->jumpToAddressPlusV0(address);
-            break;
-        }
-        case 0xC:
-        {
-            unsigned char x = (opcode & 0x0F00);
-            unsigned char value = (opcode & 0x00FF);
-            this->V[x] = randomByte() && value;
-            break;
-        }
-        case 0xD:
-        {
-            // Draw a sprite at (VX, VY) with size (8, N) at I
-            unsigned char x = this->V[(opcode & 0x0F00) >> 8];
-            unsigned char y = this->V[(opcode & 0x00F0) >> 4];
-            unsigned char height = (opcode & 0x000F);
-            this->V[0xF] = 0;
-
-            for (unsigned char yLine = 0; yLine < height; yLine++) {
-                // Load from memory at I the pixel value
-                int pixel = this->memory[this->I + yLine];
-                for (unsigned char xLine = 0; xLine < SPRITE_WIDTH; xLine++) {
-                    // Look at each bit of pixel data
-                    unsigned char pixelSet = (pixel & (0x80 >> xLine));
-                    // If current pixel is set...
-                    if (pixelSet != 0) {
-                        // Calculate the pixel index at screen memory
-                        unsigned short pixelIndex = (x + xLine) + ((y + yLine) * SCREEN_HEIGHT);
-
-                        /* 
+                    /* 
                          * If the pixel at the position is already defined, set the V[0xF] to one
                          * indicating that we have a collision
                          */
-                        if (this->screen[pixelIndex] == 1) {
-                            this->V[0xF] = 1;
-                        }
-                        // Flip pixel value using XOR 
-                        this->screen[pixelIndex] ^= 1;
+                    if (this->screen[pixelIndex] == 1)
+                    {
+                        this->V[0xF] = 1;         
                     }
+                    // Flip pixel value using XOR
+                    this->screen[pixelIndex] ^= 1;
                 }
             }
-            
-            this->draw = true;
-            break;
         }
-        case 0xE:
-            // NOP
-            break;
-        case 0xF:
-            // NOP
-            break;
-        default:
-            // RAISE AN ERROR: OPCODE NOT SUPPORTED
-            printf("\aOPCODE NOT SUPPORTED!\n");
-            return 1;
-            break;
+
+        this->draw = true;
+        break;
     }
-    
+    case 0xE:
+        // NOP
+        break;
+    case 0xF:
+        // NOP
+        break;
+    default:
+        // RAISE AN ERROR: OPCODE NOT SUPPORTED
+        printf("\aOPCODE NOT SUPPORTED!\n");
+        return 1;
+        break;
+    }
+
     return 0;
 }
 
@@ -339,15 +364,15 @@ void Chip8::addToRegisterValue(unsigned char registerIndex, unsigned char value)
 
 unsigned char Chip8::randomByte()
 {
-    float rand = ((float) random()) / RAND_MAX;
-    unsigned char randomByte = (unsigned char) (rand * 0xFF);
+    float rand = ((float)random()) / RAND_MAX;
+    unsigned char randomByte = (unsigned char)(rand * 0xFF);
     printf("Random byte is: 0x%02x", randomByte);
     return randomByte;
 }
 
-unsigned char* Chip8::getScreen(void) const
+unsigned char *Chip8::getScreen(void) const
 {
-    return (unsigned char*) this->screen;
+    return (unsigned char *)this->screen;
 }
 
 bool Chip8::needsDrawing()
@@ -355,7 +380,12 @@ bool Chip8::needsDrawing()
     return this->draw;
 }
 
+void Chip8::loadFontset() {
+    for (unsigned int i = 0; i < 80; i++) {
+        this->memory[0x50 + i] = chip8_fontset[i];
+    }
+}
+
 Chip8::~Chip8()
 {
-    free(this->screen);
 }

@@ -1,9 +1,11 @@
 #include <iostream>
 
 #include "application.h"
+#include "sdldisplay.h"
+
 int main(int argc, char** argv)
 {
-    Display *display; //TODO Implementar aqui um objeto para renderização dos gráficos
+    Display *display = new SDLDisplay(); //TODO Implementar aqui um objeto para renderização dos gráficos
     
     Chip8 ch8;
     

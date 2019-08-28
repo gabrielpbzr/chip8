@@ -8,6 +8,7 @@
 class Display
 {
     public:
+        virtual void init() = 0;
         virtual void render(unsigned char *screenBuffer) = 0;
 };
 

@@ -18,6 +18,7 @@ class Application
         void run(void);
         bool loadRom(const char* rom);
         void exit(void);
+        void processEvents(void);
         ~Application(void);
 
 };

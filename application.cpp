@@ -1,4 +1,5 @@
 #include "application.h"
+#include <SDL2/SDL.h>
 
 Application::Application(Display* display, Chip8* cpu)
 {    
@@ -10,8 +11,11 @@ Application::Application(Display* display, Chip8* cpu)
 void Application::run()
 {
     this->cpu->init();
-    while (!this->quit) {
+    this->display->init();
+    SDL_Init(SDL_INIT_EVENTS);
+    while (!this->quit) {        
         this->tick();
+        this->processEvents();
         usleep(160000);
     }
 
@@ -20,6 +24,9 @@ void Application::run()
 void Application::tick()
 {
     this->cpu->execute();
+    if (cpu->needsDrawing()) {
+        display->render(cpu->getScreen());
+    }
 }
 
 bool Application::loadRom(const char* rom)
@@ -29,7 +36,17 @@ bool Application::loadRom(const char* rom)
 
 void Application::exit()
 {
+    this->quit = true;
+}
 
+void Application::processEvents()
+{
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            this->exit();
+        }
+    }
 }
 
 Application::~Application()
