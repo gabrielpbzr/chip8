@@ -30,13 +30,15 @@ Chip8::Chip8()
 
 void Chip8::init()
 {
-    this->I = 0x0;
-    this->sp = 0x0;
+    this->I = 0x00;
+    this->sp = 0x00;
     this->pc = MEMORY_START_ADDRESS;
     memset(this->V, 0, 16);
     memset(this->screen, 0, SCREEN_SIZE);
     loadFontset();
     this->draw = false;
+    this->soundTimer = 0xFF;
+    this->delayTimer = 0xFF;
 }
 
 int Chip8::load(const char *file)
@@ -200,7 +202,7 @@ int Chip8::execute()
     {
         unsigned char x = (opcode & 0x0F00);
         unsigned char value = (opcode & 0x00FF);
-        this->V[x] = randomByte() && value;
+        this->V[x] = randomByte() & value;
         break;
     }
     case 0xD:
@@ -246,13 +248,41 @@ int Chip8::execute()
         // NOP
         break;
     case 0xF:
-        // NOP
+    {
+        unsigned char op = (opcode & 0x00FF);
+        unsigned char x = (opcode & 0x0F00) >> 8;
+        switch (op) {
+            case 0x07:
+                this->V[x] = this->delayTimer;
+                break;
+            case 0x0A:
+                //Load key pressed into V[x]
+                break;
+            case 0x15:
+                this->setDelayTimer(this->V[x]);
+                break;
+            case 0x18:
+                this->setSoundTimer(this->V[x]);
+                break;
+        }
         break;
+    }
     default:
         // RAISE AN ERROR: OPCODE NOT SUPPORTED
         printf("\aOPCODE NOT SUPPORTED!\n");
         return 1;
         break;
+    }
+
+    if (this->delayTimer > 0) {
+        --this->delayTimer;
+    }
+
+    if (this->soundTimer > 0) {
+        if (this->soundTimer == 1) {
+            printf("BEEP\a\n");
+        }
+        --this->soundTimer;
     }
 
     return 0;
@@ -380,10 +410,23 @@ bool Chip8::needsDrawing()
     return this->draw;
 }
 
-void Chip8::loadFontset() {
+void Chip8::loadFontset()
+{
     for (unsigned int i = 0; i < 80; i++) {
         this->memory[0x50 + i] = chip8_fontset[i];
     }
+}
+
+void Chip8::setDelayTimer(unsigned char value)
+{
+    this->delayTimer = value;
+    printf("SET DELAY TIMER VALUE TO => 0x%02x\n", value);
+}
+
+void Chip8::setSoundTimer(unsigned char value)
+{
+    this->soundTimer = value;
+    printf("SET SOUND TIMER VALUE TO => 0x%02x\n", value);
 }
 
 Chip8::~Chip8()

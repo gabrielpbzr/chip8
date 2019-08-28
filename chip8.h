@@ -22,6 +22,8 @@ private:
     unsigned short pc;
     unsigned short stack[STACK_SIZE];
     unsigned short sp;
+    unsigned char delayTimer;
+    unsigned char soundTimer;
     bool draw;
 
     unsigned char randomByte();
@@ -36,6 +38,8 @@ private:
     void skipNextInstructionIfNotEquals(unsigned char registerIndex, unsigned char otherRegisterIndex);
     void setRegisterValue(unsigned char registerIndex, unsigned char value);
     void addToRegisterValue(unsigned char registerIndex, unsigned char value);
+    void setDelayTimer(unsigned char value);
+    void setSoundTimer(unsigned char value);
     void loadFontset();
 public:
     Chip8();
