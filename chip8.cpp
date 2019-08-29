@@ -264,6 +264,18 @@ int Chip8::execute()
             case 0x18:
                 this->setSoundTimer(this->V[x]);
                 break;
+            case 0x1E:
+                this->I += this->V[x];
+                break;
+            case 0x29:
+                this->I = 0x50 + (this->V[x] * 5);
+                break;
+            case 0x55:
+                this->registerDump();
+                break;
+            case 0x65:
+                this->registerLoad();
+                break;
         }
         break;
     }
@@ -427,6 +439,20 @@ void Chip8::setSoundTimer(unsigned char value)
 {
     this->soundTimer = value;
     printf("SET SOUND TIMER VALUE TO => 0x%02x\n", value);
+}
+
+void Chip8::registerLoad()
+{
+    for (int i = 0; i < 16; i++) {
+        this->V[i] = this->memory[this->I + i];
+    }
+}
+
+void Chip8::registerDump()
+{
+    for (int i = 0; i < 16; i++) {
+        this->memory[this->I + i] = this->V[i];
+    }
 }
 
 Chip8::~Chip8()

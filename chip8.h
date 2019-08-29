@@ -41,6 +41,8 @@ private:
     void setDelayTimer(unsigned char value);
     void setSoundTimer(unsigned char value);
     void loadFontset();
+    void registerDump();
+    void registerLoad();
 public:
     Chip8();
     void init();
