@@ -6,22 +6,22 @@
 #include <cstdlib>
 
 const unsigned char chip8_fontset[80] = {
-        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-        0x20, 0x60, 0x20, 0x20, 0x70, // 1
-        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
 Chip8::Chip8()
@@ -39,6 +39,7 @@ void Chip8::init()
     this->draw = false;
     this->soundTimer = 0xFF;
     this->delayTimer = 0xFF;
+    this->waitingKey = false;
 }
 
 int Chip8::load(const char *file)
@@ -172,12 +173,24 @@ int Chip8::execute()
             this->V[x] >>= 1;
             break;
         case 0x07:
+        {
             this->V[x] = this->V[y] - this->V[x];
+            if (this->V[x] < this->V[y])
+            {
+                this->V[0xF] = 1;
+            }
+            else
+            {
+                this->V[0XF] = 0;
+            }
             break;
+        }
         case 0x0E:
-            this->V[0x0F] = (this->V[x] & 0x80);
-            this->V[x] <<= 1;
+        {
+            this->V[0x0F] = (this->V[x] & 0x80) >> 7;
+            this->V[x] *= 2;
             break;
+        }
         }
         break;
     }
@@ -190,7 +203,6 @@ int Chip8::execute()
     }
     case 0xA:
         this->I = (opcode & 0x0FFF);
-        printf("Address stored at I => 0x%x\n", this->I);
         break;
     case 0xB:
     {
@@ -233,7 +245,7 @@ int Chip8::execute()
                          */
                     if (this->screen[pixelIndex] == 1)
                     {
-                        this->V[0xF] = 1;         
+                        this->V[0xF] = 1;
                     }
                     // Flip pixel value using XOR
                     this->screen[pixelIndex] ^= 1;
@@ -245,37 +257,59 @@ int Chip8::execute()
         break;
     }
     case 0xE:
-        // NOP
+    {
+        unsigned char op = (opcode & 0x00FF);
+        unsigned char x = (opcode & 0x0F00) >> 8;
+        switch (op)
+        {
+        case 0x9E:
+            this->skipNextInstructionIfKeyIsPressed(this->V[x]);
+            break;
+        case 0xA1:
+            this->skipNextInstructionIfKeyIsNotPressed(this->V[x]);
+            break;
+        }
         break;
+    }
     case 0xF:
     {
         unsigned char op = (opcode & 0x00FF);
         unsigned char x = (opcode & 0x0F00) >> 8;
-        switch (op) {
-            case 0x07:
-                this->V[x] = this->delayTimer;
-                break;
-            case 0x0A:
-                //Load key pressed into V[x]
-                break;
-            case 0x15:
-                this->setDelayTimer(this->V[x]);
-                break;
-            case 0x18:
-                this->setSoundTimer(this->V[x]);
-                break;
-            case 0x1E:
-                this->I += this->V[x];
-                break;
-            case 0x29:
-                this->I = 0x50 + (this->V[x] * 5);
-                break;
-            case 0x55:
-                this->registerDump();
-                break;
-            case 0x65:
-                this->registerLoad();
-                break;
+        switch (op)
+        {
+        case 0x07:
+            this->V[x] = this->delayTimer;
+            break;
+        case 0x0A:
+            this->waitForKey();
+            break;
+        case 0x15:
+            this->setDelayTimer(this->V[x]);
+            break;
+        case 0x18:
+            this->setSoundTimer(this->V[x]);
+            break;
+        case 0x1E:
+            this->I += this->V[x];
+            break;
+        case 0x29:
+            this->I = 0x50 + (this->V[x] * 5);
+            break;
+        case 0x33:
+        {
+            unsigned char hundreds = this->V[x] % 1000 / 100;
+            unsigned char tens = this->V[x] % 100 / 10;
+            unsigned char ones = this->V[x] % 10;
+            this->memory[I] = hundreds;
+            this->memory[I + 1] = tens;
+            this->memory[I + 2] = ones;
+        }
+        case 0x55:
+            this->registerDump();
+            break;
+        case 0x65:
+            this->registerLoad();
+            break;
         }
         break;
     }
@@ -286,12 +320,15 @@ int Chip8::execute()
         break;
     }
 
-    if (this->delayTimer > 0) {
+    if (this->delayTimer > 0)
+    {
         --this->delayTimer;
     }
 
-    if (this->soundTimer > 0) {
-        if (this->soundTimer == 1) {
+    if (this->soundTimer > 0)
+    {
+        if (this->soundTimer == 1)
+        {
             printf("BEEP\a\n");
         }
         --this->soundTimer;
@@ -328,66 +365,54 @@ void Chip8::dump()
 
 void Chip8::jumpToAddress(unsigned short address)
 {
-    printf("GOTO ADDRESS 0x%x\n", address);
     this->pc = address;
 }
 
 void Chip8::jumpToAddressPlusV0(unsigned short address)
 {
     unsigned short newAddress = address + this->V[0];
-    printf("GOTO ADDRESS 0x%x\n PLUS V0 CONTENT => 0x03%x", address, newAddress);
     this->pc = newAddress;
 }
 
 void Chip8::returnFromSubRoutine()
 {
     this->pc = this->stack[--this->sp];
-    printf("RETURN FROM ROUTINE TO 0x%04x\n", this->pc);
 }
 
 void Chip8::callSubroutineAt(unsigned short address)
 {
     this->stack[this->sp++] = this->pc;
     this->pc = address;
-    printf("CALLING ROUTINE AT 0x%04x\n", this->pc);
 }
 
 void Chip8::skipNextInstructionIfRegisterValueEquals(unsigned char registerIndex, unsigned char value)
 {
-    printf("SKIP INSTRUCTION IF V[%d] == %d: %d\n", registerIndex, value, this->V[registerIndex]);
     if (this->V[registerIndex] == value)
     {
-        printf("\tSKIPPED\n");
         this->pc += 2;
     }
 }
 
 void Chip8::skipNextInstructionIfRegisterValueNotEquals(unsigned char registerIndex, unsigned char value)
 {
-    printf("SKIP INSTRUCTION IF V[%d] != %d: %d\n", registerIndex, value, this->V[registerIndex]);
-    if (this->V[registerIndex] == value)
+    if (this->V[registerIndex] != value)
     {
-        printf("\tSKIPPED\n");
         this->pc += 2;
     }
 }
 
 void Chip8::skipNextInstructionIfEquals(unsigned char registerIndex, unsigned char otherRegisterIndex)
 {
-    printf("SKIP INSTRUCTION IF V[%d] == V[%d]: %d == %d\n", registerIndex, otherRegisterIndex, this->V[registerIndex], this->V[otherRegisterIndex]);
     if (this->V[registerIndex] == this->V[otherRegisterIndex])
     {
-        printf("\tSKIPPED\n");
         this->pc += 2;
     }
 }
 
 void Chip8::skipNextInstructionIfNotEquals(unsigned char registerIndex, unsigned char otherRegisterIndex)
 {
-    printf("SKIP INSTRUCTION IF V[%d] != V[%d]: %d == %d\n", registerIndex, otherRegisterIndex, this->V[registerIndex], this->V[otherRegisterIndex]);
     if (this->V[registerIndex] != this->V[otherRegisterIndex])
     {
-        printf("\tSKIPPED\n");
         this->pc += 2;
     }
 }
@@ -395,20 +420,18 @@ void Chip8::skipNextInstructionIfNotEquals(unsigned char registerIndex, unsigned
 void Chip8::setRegisterValue(unsigned char registerIndex, unsigned char value)
 {
     this->V[registerIndex] = value;
-    printf("ASSIGN VALUE TO V[%d] = 0x%02x\n", registerIndex, value);
 }
 
 void Chip8::addToRegisterValue(unsigned char registerIndex, unsigned char value)
 {
     this->V[registerIndex] += value;
-    printf("ADD VALUE TO V[%d] = 0x%02x\n", registerIndex, value);
 }
 
 unsigned char Chip8::randomByte()
 {
     float rand = ((float)random()) / RAND_MAX;
     unsigned char randomByte = (unsigned char)(rand * 0xFF);
-    printf("Random byte is: 0x%02x", randomByte);
+
     return randomByte;
 }
 
@@ -424,7 +447,8 @@ bool Chip8::needsDrawing()
 
 void Chip8::loadFontset()
 {
-    for (unsigned int i = 0; i < 80; i++) {
+    for (unsigned int i = 0; i < 80; i++)
+    {
         this->memory[0x50 + i] = chip8_fontset[i];
     }
 }
@@ -432,27 +456,70 @@ void Chip8::loadFontset()
 void Chip8::setDelayTimer(unsigned char value)
 {
     this->delayTimer = value;
-    printf("SET DELAY TIMER VALUE TO => 0x%02x\n", value);
 }
 
 void Chip8::setSoundTimer(unsigned char value)
 {
     this->soundTimer = value;
-    printf("SET SOUND TIMER VALUE TO => 0x%02x\n", value);
 }
 
 void Chip8::registerLoad()
 {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
+    {
         this->V[i] = this->memory[this->I + i];
     }
 }
 
 void Chip8::registerDump()
 {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
+    {
         this->memory[this->I + i] = this->V[i];
     }
+}
+
+void Chip8::skipNextInstructionIfKeyIsPressed(unsigned char key)
+{
+    if (key == 1)
+    {
+        this->pc += 2;
+    }
+}
+
+void Chip8::skipNextInstructionIfKeyIsNotPressed(unsigned char key)
+{
+    if (key == 0)
+    {
+        this->pc += 2;
+    }
+}
+
+void Chip8::waitForKey()
+{
+    if (!this->isWaitingKey())
+    {
+        this->waitingKey = true;
+        this->pc = 0;
+    }
+    printf("WAITING FOR KEY\n");
+}
+
+void Chip8::stopWaitingKey()
+{
+    this->waitingKey = false;
+    printf("STOP WAITING FOR KEY\n");
+}
+
+bool Chip8::isWaitingKey()
+{
+    return this->waitingKey;
+}
+
+void Chip8::setKeyState(unsigned char key, bool state)
+{
+    this->keys[key] = state;
+    printf("Key[%d] => %d\n", key, state);
 }
 
 Chip8::~Chip8()

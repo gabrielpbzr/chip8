@@ -9,6 +9,7 @@
 #define SCREEN_SIZE SCREEN_WIDTH *SCREEN_HEIGHT
 #define STACK_SIZE 16
 #define SPRITE_WIDTH 8
+#define KEY_COUNT 16
 
 #include "display.h"
 
@@ -24,6 +25,8 @@ private:
     unsigned short sp;
     unsigned char delayTimer;
     unsigned char soundTimer;
+    unsigned char keys[KEY_COUNT];
+    bool waitingKey;
     bool draw;
 
     unsigned char randomByte();
@@ -36,6 +39,8 @@ private:
     void skipNextInstructionIfRegisterValueNotEquals(unsigned char registerIndex, unsigned char value);
     void skipNextInstructionIfEquals(unsigned char registerIndex, unsigned char otherRegisterIndex);
     void skipNextInstructionIfNotEquals(unsigned char registerIndex, unsigned char otherRegisterIndex);
+    void skipNextInstructionIfKeyIsPressed(unsigned char key);
+    void skipNextInstructionIfKeyIsNotPressed(unsigned char key);
     void setRegisterValue(unsigned char registerIndex, unsigned char value);
     void addToRegisterValue(unsigned char registerIndex, unsigned char value);
     void setDelayTimer(unsigned char value);
@@ -51,6 +56,10 @@ public:
     void dump();
     unsigned char *getScreen(void) const;
     bool needsDrawing();
+    void waitForKey();
+    void stopWaitingKey();
+    bool isWaitingKey();
+    void setKeyState(unsigned char key, bool pressed);
     ~Chip8();
 };
 #endif
