@@ -1,7 +1,7 @@
 #include "application.h"
 #include <unordered_map>
 
-#define CLOCK_DELAY 160000 //Microseconds
+#define CLOCK_DELAY 80000 //Microseconds
 
 std::unordered_map<int, int> keyboard{
     {SDLK_1, 0x1}, {SDLK_2, 0x2}, {SDLK_3, 0x3}, {SDLK_4, 0xC},

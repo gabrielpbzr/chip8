@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv)
 {
-    Display *display = new SDLDisplay(); //TODO Implementar aqui um objeto para renderização dos gráficos
+    Display *display = new SDLDisplay();
     
     Chip8 ch8;
     
