@@ -68,6 +68,11 @@ int Chip8::execute()
 {
     // Clear drawing flag
     this->draw = false;
+
+    if (this->isWaitingKey()) {
+        return 0;
+    }
+
     //fetch
     unsigned short opcode = this->fetchInstruction();
     if (opcode == 0x0000)
@@ -281,6 +286,7 @@ int Chip8::execute()
             this->V[x] = this->delayTimer;
             break;
         case 0x0A:
+            this->wantedKeyRegisterIndex = x;
             this->waitForKey();
             break;
         case 0x15:
@@ -300,9 +306,9 @@ int Chip8::execute()
             unsigned char hundreds = this->V[x] % 1000 / 100;
             unsigned char tens = this->V[x] % 100 / 10;
             unsigned char ones = this->V[x] % 10;
-            this->memory[I] = hundreds;
-            this->memory[I + 1] = tens;
-            this->memory[I + 2] = ones;
+            this->memory[this->I] = hundreds;
+            this->memory[this->I + 1] = tens;
+            this->memory[this->I + 2] = ones;   
         }
         case 0x55:
             this->registerDump();
@@ -481,7 +487,7 @@ void Chip8::registerDump()
 
 void Chip8::skipNextInstructionIfKeyIsPressed(unsigned char key)
 {
-    if (key == 1)
+    if (this->keys[key] == 1)
     {
         this->pc += 2;
     }
@@ -489,7 +495,7 @@ void Chip8::skipNextInstructionIfKeyIsPressed(unsigned char key)
 
 void Chip8::skipNextInstructionIfKeyIsNotPressed(unsigned char key)
 {
-    if (key == 0)
+    if (this->keys[key] == 0)
     {
         this->pc += 2;
     }
@@ -497,17 +503,15 @@ void Chip8::skipNextInstructionIfKeyIsNotPressed(unsigned char key)
 
 void Chip8::waitForKey()
 {
-    if (!this->isWaitingKey())
-    {
-        this->waitingKey = true;
-        this->pc = 0;
-    }
+    this->waitingKey = true;    
+    
     printf("WAITING FOR KEY\n");
 }
 
 void Chip8::stopWaitingKey()
 {
     this->waitingKey = false;
+    //this->pc += 2;
     printf("STOP WAITING FOR KEY\n");
 }
 
@@ -519,7 +523,11 @@ bool Chip8::isWaitingKey()
 void Chip8::setKeyState(unsigned char key, bool state)
 {
     this->keys[key] = state;
-    printf("Key[%d] => %d\n", key, state);
+    //printf("Key[%d] => %d\n", key, state);
+    if (this->isWaitingKey() && state) {
+        this->V[this->wantedKeyRegisterIndex] = key;
+        this->stopWaitingKey();
+    }
 }
 
 Chip8::~Chip8()

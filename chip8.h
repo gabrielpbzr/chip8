@@ -26,6 +26,7 @@ private:
     unsigned char delayTimer;
     unsigned char soundTimer;
     unsigned char keys[KEY_COUNT];
+    unsigned char wantedKeyRegisterIndex;
     bool waitingKey;
     bool draw;
 
